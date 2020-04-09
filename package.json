@@ -4,6 +4,7 @@
   "description": "Computer Graphic Lab. NNTU, 2020, 16-V-1.",
   "main": "index.js",
   "scripts": {
+    "start": "webpack-dev-server --history-api-fallback --inline --progress",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -15,5 +16,14 @@
   "bugs": {
     "url": "https://github.com/YudinPavel/Computer-Graphics/issues"
   },
-  "homepage": "https://github.com/YudinPavel/Computer-Graphics#readme"
+  "homepage": "https://github.com/YudinPavel/Computer-Graphics#readme",
+  "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-loader": "^7.1.5",
+    "babel-preset-env": "^1.7.0",
+    "html-webpack-plugin": "^4.2.0",
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.10.3"
+  }
 }
