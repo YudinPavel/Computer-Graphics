@@ -14,6 +14,14 @@ module.exports = {
         exclude: [
           /node_modules/
         ]
+      },
+      {
+        test: /\.less$/,
+        loader: 'less-loader', // compiles Less to CSS
+      },
+      {
+        test: /\.html/,
+        loader: 'raw-loader'
       }
     ]
   },
