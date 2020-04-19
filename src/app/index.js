@@ -4,9 +4,48 @@ import init from 'three-dat.gui';
 var OrbitControls = require('../../node_modules/three-orbit-controls')(THREE);
 init(Dat);
 
+const ballConst = {
+    y0: 250,
+    y: 250,
+    r: 25,
+    x0: -125,
+    x: -125,
+    z: 0,
+    v: 0,
+    vy: 0,
+    vx: 0,
+    epsila: 0.7,
+    motionDown: true
+}
+
+const floors = [
+    {
+        width: 3000,
+        floorMesh: null,
+        height: 3000,
+        x: 0,
+        y: 0,
+        z: -3000,
+        rotateX: 0,
+        rotateY: 0,
+        rotateZ: 0
+    },
+    {
+        width: 3000,
+        floorMesh: null,
+        height: 3000,
+        x: 0,
+        y: 0,
+        z: 3000,
+        rotateX: 0,
+        rotateY: Math.PI,
+        rotateZ: 0
+    }
+]
+
 const ZERO_POINT = 0;
 const MAX_AXIS_LENGTH = 100;
-const BACKGROUND_COLOR = 0x808080;
+const BACKGROUND_COLOR = 'white';
 
 window.onload = function() {
 
@@ -20,8 +59,9 @@ window.onload = function() {
     let scene = new THREE.Scene();
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    let startTime;
     
+    //setEnviroment(scene);
+
     let gui = new Dat.GUI();
 
     let camera = Camera(width, height);
@@ -36,9 +76,11 @@ window.onload = function() {
         y0: 250,
         y: 250,
         r: 25,
-        x: -225,
+        x0: -125,
+        x: -125,
         z: 0,
-        v0: 0,
+        v: 0,
+        vy: 0,
         vx: 0,
         epsila: 0.7,
         motionDown: true
@@ -103,7 +145,6 @@ window.onload = function() {
     let onStart = ({
         add: () => {
              enviroment.start = !enviroment.start;
-             startTime = new Date().getTime();
              if(!enviroment.start) {
                 restart();
             }
@@ -122,26 +163,27 @@ window.onload = function() {
     function restart() {
         ball.y0 = 250;
         ball.y = 250;
-        ball.x = 0;
+        ball.r = 25;
+        ball.x0 = -125;
+        ball.x = -125;
         ball.z = 0;
-        ball.v0 = 0;
+        ball.v = 0;
+        ball.vy = 0;
+        ball.vx = 0;
         ball.epsila = 0.7;
-        ball.motionDown = true;
-        t = 0;
         kostyl = 0;
+        t = 0;
+        ball.motionDown = true;
+        console.log('restart');
     }
 
     function render() {
-    
-        let zero_height = Math.tan(floor.rotateY)*Math.abs(ball.x);
 
-        if(Math.pow(Math.pow(floor.width/2, 2) - Math.pow(zero_height, 2), 1/2) < Math.abs(ball.x + 5)){
-            zero_height = -1000;
-        }
-        if(ball.y < -155) {
-            enviroment.start = false;
-        }
+        let zero_x_height = Math.tan(floor.rotateY)*(-ball.x);
 
+        if(Math.pow(Math.pow(floor.width/2, 2) - Math.pow(zero_x_height, 2), 1/2) < Math.abs(ball.x + 5)){
+            zero_x_height = -10000;
+        }
 
         if (resizeRendererToDisplaySize(renderer)) {
             const canvas = renderer.domElement;
@@ -154,41 +196,77 @@ window.onload = function() {
 
         function motion() {
 
-            t;
+            let gy = -(enviroment.g * Math.pow(t, 2))/2;
+            //let zero_x_height = search_y(ball.x, floor.rotateY);
 
             if(ball.motionDown) {
-                ball.y = ball.v0*t + ball.y0 - (enviroment.g * Math.pow(t, 2))/2;
-                if(ball.y - ball.r < zero_height) {
-                    ball.v0 = enviroment.g * t * ball.epsila;
-                    ball.y0 = -ball.r - zero_height;
+
+                let dx = ball.x;
+                let dy = ball.y;
+
+                ball.x = ball.vx*t + ball.x0;
+                ball.y = ball.vy*t + ball.y0 + gy;
+
+                dx = 0;
+                dy = ball.y - dy;
+
+                let rotateBall = Math.atan(dy/dx);
+                let rotateSpeed = (Math.PI - (floor.rotateY + Math.PI/2) - rotateBall - (floor.rotateY + Math.PI/2));
+
+                console.log('rotateSpeed: ' + rotateSpeed);
+                if(isCollision()) {
+                    ball.vy = enviroment.g * t * ball.epsila;
+                    ball.v = Math.abs(ball.vx) + Math.abs(ball.vy);
+
+                    console.log(ball.v);
+
+                    ball.vx = ball.v * Math.cos(rotateSpeed);
+                    ball.vy = ball.v * Math.sin(rotateSpeed);
+
+                    console.log('ball.vx: ' + ball.vx);
+                    console.log('ball.vy: ' + ball.vy);
+
+                    ball.x0 = ball.x;
+                    ball.y0 = -ball.r - zero_x_height;
                     ball.motionDown = false;
                     kostyl = -10000;
                     t = 0;
                 }
             }
             else {
-                //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAa
-                ball.y = ball.v0*t - ball.y0 - (enviroment.g * Math.pow(t, 2))/2;
+
+                ball.x = ball.vx*t + ball.x0;
+                ball.y = ball.vy*t - ball.y0 + gy;
                 
                 if (kostyl > ball.y) {
+                    ball.x0 = ball.x;
                     ball.y0 = ball.y;
-                    ball.v0 = 0;
+                    ball.vy = 0;
                     ball.motionDown = true;
                     t = 0;
-                    if(ball.y0 < ball.r + 1 + zero_height) {
-                        ball.v0 = 0;
-                        t = 0;
-                        ball.y0 = zero_height + ball.r;
-                    }
                 }
 
                 kostyl = ball.y;
                 
             }
 
+            function search_y(x, rotate) {
+                return Math.tan(rotate) * (-x);
+            }
+
+            function isCollision() {
+                let colisionX = Math.pow(Math.pow(ball.x + ball.r, 2) + Math.pow(zero_x_height, 2), 1/2) < Math.abs(floor.width/2);
+                let colisionY = ball.y - ball.r < zero_x_height;
+                if(colisionX && colisionY) {
+                    debugger;
+                }
+                return colisionX && colisionY;
+            }
+
             t+=0.1*enviroment.time;
         }
 
+        ballMesh.position.x = ball.x;
         ballMesh.position.y = ball.y;
         floorMesh.rotation.y = floor.rotateY;
         renderer.render(scene, camera);
@@ -204,11 +282,11 @@ window.onload = function() {
 function Camera(width, height) {
     var viewAngle = 45;
     var startDistance = 0.1;
-    var endDistance = 3000;
+    var endDistance = 30000;
 
     var camera = new THREE.PerspectiveCamera(viewAngle, width / height, startDistance, endDistance);
 
-    camera.position.set(100, 300, 700);
+    camera.position.set(500, 300, 700);
 
     camera.rotation.x = -0.35;
 
@@ -225,4 +303,17 @@ function resizeRendererToDisplaySize(renderer) {
       renderer.setSize(width, height, false);
     }
     return needResize;
+}
+
+function setEnviroment(scene) {
+    for(let i = 0; i < floors.length; i++) {
+        const geometry = new THREE.PlaneGeometry(floors[i].width, floors[i].height, 100, 100);
+        const material = new THREE.MeshPhongMaterial({color: '#CA8'});
+        floors[i].floorMesh = new THREE.Mesh(geometry, material);
+        floors[i].floorMesh.position.set(floors[i].x, floors[i].y, floors[i].z);
+        floors[i].floorMesh.rotation.x = floors[i].rotateX;
+        floors[i].floorMesh.rotation.y = floors[i].rotateY;
+        floors[i].floorMesh.rotation.z = floors[i].rotateZ;
+        scene.add(floors[i].floorMesh);
+    }
 }
