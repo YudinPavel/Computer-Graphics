@@ -4,6 +4,7 @@
   "description": "Computer Graphic Lab. NNTU, 2020, 16-V-1.",
   "main": "index.js",
   "scripts": {
+    "build": "webpack",
     "start": "webpack-dev-server --history-api-fallback --inline --progress",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
